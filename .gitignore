@@ -1,0 +1,14 @@
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+!.env.example
+*.tsbuildinfo
+.DS_Store
+.vercel
+
+# Firebase private credentials
+*service-account*.json
+*firebase-adminsdk*.json
+.firebase/

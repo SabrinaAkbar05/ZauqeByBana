@@ -1,0 +1,9 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Phase 1 has no uploads. Add scoped rules when a specific upload workflow ships.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

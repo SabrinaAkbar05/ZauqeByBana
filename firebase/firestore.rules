@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // All CRUD operations are performed through verified Next.js server actions.
+    // The Firebase Admin SDK bypasses these client rules and must never be exposed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
