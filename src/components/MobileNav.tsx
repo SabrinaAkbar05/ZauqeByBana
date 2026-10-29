@@ -25,7 +25,7 @@ import type { Profile } from '@/lib/auth';
 import { BrandLogo } from './BrandLogo';
 
 const sections = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/customers', label: 'Customers', icon: UsersRound },
   { href: '/events', label: 'Events & Bookings', icon: CalendarDays },
   { href: '/packages', label: 'Service Packages', icon: UtensilsCrossed },
@@ -33,7 +33,7 @@ const sections = [
   { href: '/invoices', label: 'Invoices', icon: ReceiptText, owner: true },
   { href: '/payments', label: 'Payments', icon: CreditCard, owner: true },
   { href: '/expenses', label: 'Expenses', icon: Wallet, owner: true },
-  { href: '/team', label: 'Team Access', icon: UserCog, owner: true },
+  { href: '/team', label: 'Team Management', icon: UserCog, owner: true },
   { href: '/settings', label: 'Settings', icon: Settings2, owner: true },
 ];
 
@@ -52,16 +52,33 @@ export function MobileNav({
     setIsOpen(false);
   }, [pathname]);
 
-  // Lock body scroll when mobile drawer is open
+  // Lock background scroll on both body and html when mobile drawer is open (prevents iOS Safari scroll leak)
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.touchAction = '';
     }
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.touchAction = '';
     };
+  }, [isOpen]);
+
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
   const initial = (profile.full_name || profile.email).slice(0, 1).toUpperCase();
@@ -87,7 +104,7 @@ export function MobileNav({
         </div>
       </header>
 
-      {/* Backdrop */}
+      {/* Backdrop (Darkened and blurred overlay to keep dashboard visible beneath) */}
       <div
         className={`mobile-drawer-backdrop ${isOpen ? 'open' : ''}`}
         onClick={() => setIsOpen(false)}
@@ -97,11 +114,14 @@ export function MobileNav({
       {/* Slide-out Drawer */}
       <aside
         className={`mobile-drawer ${isOpen ? 'open' : ''}`}
-        aria-label="Mobile Menu"
+        aria-label="Mobile Navigation Drawer"
         aria-hidden={!isOpen}
       >
+        {/* Drawer Header with Branded Logo & Close Button */}
         <div className="mobile-drawer-header">
-          <BrandLogo size="md" showText={true} tagline={true} />
+          <div className="mobile-drawer-brand" onClick={() => setIsOpen(false)}>
+            <BrandLogo size="md" showText={true} tagline={true} href="/dashboard" />
+          </div>
           <button
             type="button"
             className="mobile-drawer-close"
@@ -112,57 +132,62 @@ export function MobileNav({
           </button>
         </div>
 
-        <div className="side-company">
-          <span className="company-dot" />
-          <span>{businessName || 'ZAUQÉ BY BANA'}</span>
-          <ChevronRight size={14} />
-        </div>
-
-        <div className="nav-title">WORKSPACE</div>
-
-        <nav className="nav-items" aria-label="Navigation links">
-          {sections
-            .filter((s) => !s.owner || profile.role === 'owner')
-            .map(({ href, label, icon: Icon }) => {
-              const isActive = pathname === href || pathname.startsWith(`${href}/`);
-              return (
-                <Link
-                  href={href}
-                  key={href}
-                  className={`nav-item ${isActive ? 'active' : ''}`}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Icon size={19} />
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
-        </nav>
-
-        <div className="side-bottom">
-          <div className="person">
-            <span className="avatar">{initial}</span>
-            <span className="person-info">
-              <strong>{profile.full_name || profile.email}</strong>
-              <small>{profile.role === 'owner' ? 'Business Owner' : 'Staff Member'}</small>
-            </span>
+        {/* Scrollable Drawer Body */}
+        <div className="mobile-drawer-body">
+          <div className="mobile-side-company" title={businessName || 'ZAUQÉ BY BANA'}>
+            <span className="company-dot" />
+            <span>{businessName || 'ZAUQÉ BY BANA'}</span>
+            <ChevronRight size={14} style={{ color: '#C9A46A', opacity: 0.75 }} />
           </div>
 
-          <Link
-            href="/set-password"
-            className="signout"
-            onClick={() => setIsOpen(false)}
-          >
-            <KeyRound size={17} />
-            <span>Change password</span>
-          </Link>
+          <div className="mobile-nav-title">WORKSPACE</div>
 
-          <form action={signOut}>
-            <button className="signout signout-danger" type="submit">
-              <LogOut size={17} />
-              <span>Sign out</span>
-            </button>
-          </form>
+          {/* Navigation Items (Icons aligned left, followed by labels, row height ~48-52px) */}
+          <nav className="mobile-nav-items" aria-label="Mobile navigation links">
+            {sections
+              .filter((s) => !s.owner || profile.role === 'owner')
+              .map(({ href, label, icon: Icon }) => {
+                const isActive = pathname === href || pathname.startsWith(`${href}/`);
+                return (
+                  <Link
+                    href={href}
+                    key={href}
+                    className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Icon size={20} className="mobile-nav-icon" />
+                    <span className="mobile-nav-label">{label}</span>
+                  </Link>
+                );
+              })}
+          </nav>
+
+          {/* Bottom Account & Sign Out Options */}
+          <div className="mobile-drawer-footer">
+            <div className="mobile-person">
+              <span className="avatar">{initial}</span>
+              <span className="mobile-person-info">
+                <strong>{profile.full_name || profile.email}</strong>
+                <small>{profile.role === 'owner' ? 'Business Owner' : 'Staff Member'}</small>
+              </span>
+            </div>
+
+            <Link
+              href="/set-password"
+              className="mobile-action-btn"
+              onClick={() => setIsOpen(false)}
+            >
+              <KeyRound size={19} className="mobile-action-icon" />
+              <span>Change Password</span>
+            </Link>
+
+            <form action={signOut} style={{ margin: 0 }}>
+              <button className="mobile-action-btn danger" type="submit">
+                <LogOut size={19} className="mobile-action-icon" />
+                <span>Sign Out</span>
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
     </>
